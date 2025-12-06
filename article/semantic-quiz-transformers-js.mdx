@@ -1,0 +1,324 @@
+---
+title: "Building a Semantic Quiz with AI-Powered Answer Grading in the Browser"
+description: "Learn how to create an interactive quiz that grades free-text answers using semantic similarity - all running 100% client-side with Transformers.js"
+pubDate: "December 6, 2025"
+author: "Henok Wehibe"
+tags: ["ai", "transformers.js", "javascript", "tutorial", "machine-learning"]
+featured: true
+image: "/images/semantic-quiz-hero.png"
+readingTime: "10 min read"
+---
+
+# Building a Semantic Quiz with AI-Powered Answer Grading in the Browser
+
+What if your quiz could understand *meaning* instead of just matching exact text? Imagine a system where "neural networks learn from errors" and "NNs adjust weights based on mistakes" both get full credit — because they mean the same thing.
+
+In this article, I'll show you how I built an interactive ML quiz with **semantic answer grading** using Transformers.js — all running 100% in the browser with no server required.
+
+## The Problem with Traditional Quizzes
+
+Traditional quiz systems are frustrating:
+
+- ❌ **Exact match only** — "gradient descent" ≠ "Gradient Descent"
+- ❌ **No paraphrasing** — Your own words don't count
+- ❌ **Regex nightmares** — Maintaining answer patterns is painful
+- ❌ **Limited feedback** — Just "right" or "wrong"
+
+What if we could grade answers based on their *semantic meaning* instead?
+
+## Enter Transformers.js
+
+[Transformers.js](https://huggingface.co/docs/transformers.js) is Hugging Face's library for running transformer models directly in the browser using WebAssembly (WASM). It brings the power of models like BERT, GPT-2, and sentence transformers to the client-side.
+
+### Why Browser-Based?
+
+| Benefit | Description |
+|---------|-------------|
+| 🔐 **Privacy** | Answers never leave the user's device |
+| 💰 **Zero cost** | No API calls or server infrastructure |
+| ⚡ **Offline** | Works without internet after initial load |
+| 🚀 **Low latency** | No network round-trips |
+
+## How Semantic Grading Works
+
+The magic happens in three steps:
+
+### 1. Text → Embeddings
+
+We convert text into **embedding vectors** — lists of numbers that capture meaning. The model we use (`all-MiniLM-L6-v2`) produces 384-dimensional vectors.
+
+```javascript
+import { pipeline } from '@huggingface/transformers';
+
+// Load the embedding model
+const embedder = await pipeline(
+  'feature-extraction', 
+  'Xenova/all-MiniLM-L6-v2',
+  { dtype: 'q8' } // Quantized for faster loading
+);
+
+// Generate embedding for text
+async function embed(text) {
+  const output = await embedder(text, { 
+    pooling: 'mean', 
+    normalize: true 
+  });
+  return Array.from(output.data);
+}
+```
+
+### 2. Compare with Cosine Similarity
+
+To compare two answers, we calculate the **cosine similarity** between their vectors. This measures the angle between them — smaller angle means more similar meaning.
+
+```javascript
+function cosineSimilarity(a, b) {
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+```
+
+The formula:
+
+$$
+\text{similarity} = \frac{A \cdot B}{\|A\| \times \|B\|}
+$$
+
+Where:
+- $A \cdot B$ is the dot product of the vectors
+- $\|A\|$ and $\|B\|$ are the magnitudes (lengths) of each vector
+
+### 3. Grade Based on Similarity Score
+
+We map similarity scores to grades:
+
+| Similarity | Rating | Points | Meaning |
+|------------|--------|--------|---------|
+| ≥ 85% | Excellent! | 1.0 | Core concept captured accurately |
+| ≥ 70% | Good! | 0.8 | Good understanding with minor gaps |
+| ≥ 55% | Partial | 0.5 | Some relevant concepts mentioned |
+| < 55% | Try Again | 0 | Answer doesn't match expected concept |
+
+## Building the Quiz
+
+Let's build it step by step.
+
+### Project Setup
+
+```bash
+npm create vite@latest browser-quiz
+cd browser-quiz
+npm install @huggingface/transformers
+```
+
+### Quiz Data Structure
+
+Define questions with expected answers and hints:
+
+```javascript
+const quizData = [
+  {
+    question: "What is the main goal of supervised learning?",
+    answer: "Supervised learning aims to learn a mapping from inputs to outputs using labeled training data, where the correct answers are provided during training.",
+    hint: "Think about what makes it 'supervised' - what extra information do you have?"
+  },
+  {
+    question: "What problem does regularization solve?",
+    answer: "Regularization prevents overfitting by adding a penalty term to the loss function that discourages complex models, helping the model generalize better to unseen data.",
+    hint: "Consider what happens when a model is too complex."
+  },
+  // ... more questions
+];
+```
+
+### Pre-compute Answer Embeddings
+
+For efficiency, we compute answer embeddings once at startup:
+
+```javascript
+let answerEmbeddings = [];
+
+async function initializeQuizEmbeddings() {
+  console.log('Pre-computing quiz answer embeddings...');
+  
+  for (const quiz of quizData) {
+    const embedding = await embed(quiz.answer);
+    answerEmbeddings.push(embedding);
+  }
+  
+  console.log('Quiz embeddings ready!');
+}
+```
+
+### Evaluate User Answers
+
+When a user submits an answer, we compare it to the expected answer:
+
+```javascript
+async function evaluateAnswer(userAnswer, questionIndex) {
+  // Get embedding for user's answer
+  const userEmbedding = await embed(userAnswer);
+  
+  // Compare with expected answer
+  const expectedEmbedding = answerEmbeddings[questionIndex];
+  const similarity = cosineSimilarity(userEmbedding, expectedEmbedding);
+  
+  // Determine grade
+  if (similarity >= 0.85) {
+    return { label: 'Excellent!', points: 1.0, similarity };
+  } else if (similarity >= 0.70) {
+    return { label: 'Good!', points: 0.8, similarity };
+  } else if (similarity >= 0.55) {
+    return { label: 'Partial', points: 0.5, similarity };
+  } else {
+    return { label: 'Try Again', points: 0, similarity };
+  }
+}
+```
+
+## The Complete UI
+
+Here's how I structured the quiz interface:
+
+```html
+<div class="quiz-section">
+  <h2>🎯 Interactive ML Quiz</h2>
+  
+  <div class="quiz-header">
+    <span id="quiz-progress">Question 1 of 5</span>
+    <span id="quiz-score">Score: 0/0 (0%)</span>
+  </div>
+  
+  <div class="quiz-question" id="quiz-question">
+    Loading quiz...
+  </div>
+  
+  <textarea 
+    id="quiz-answer" 
+    placeholder="Type your answer here..."
+    disabled
+  ></textarea>
+  
+  <div class="quiz-buttons">
+    <button id="submit-answer-btn">Submit Answer</button>
+    <button id="show-hint-btn">Show Hint</button>
+    <button id="next-question-btn" style="display: none;">
+      Next Question
+    </button>
+  </div>
+  
+  <div id="quiz-feedback"></div>
+</div>
+```
+
+## Real-World Examples
+
+Here's how semantic matching performs on actual answers:
+
+### Question: "What is the main goal of supervised learning?"
+
+| User Answer | Similarity | Grade |
+|-------------|------------|-------|
+| "Learning from labeled data to predict outputs" | 87% | ✅ Excellent |
+| "Training a model with examples that have correct answers" | 78% | ✅ Good |
+| "Machine learning with training data" | 61% | ⚠️ Partial |
+| "Neural networks" | 42% | ❌ Try Again |
+
+The model understands that different phrasings of the same concept should receive credit!
+
+## Performance Considerations
+
+### Model Loading
+
+The `all-MiniLM-L6-v2` model is ~25MB (quantized). First load downloads it, but subsequent loads use the browser cache:
+
+```javascript
+const embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
+  dtype: 'q8', // 8-bit quantization for smaller size
+  progress_callback: (progress) => {
+    console.log(`Loading: ${Math.round(progress.progress)}%`);
+  }
+});
+```
+
+### Embedding Speed
+
+On my machine, generating an embedding takes ~50-100ms per sentence. For a quiz with 5-10 questions, pre-computing embeddings adds 0.5-1 second to startup.
+
+### Memory Usage
+
+The model uses ~100-150MB of memory. This is reasonable for modern devices but worth considering for mobile users.
+
+## Bonus: Vector Search for Related Questions
+
+I also built a vector index for finding semantically similar questions:
+
+```javascript
+import { VectorIndex } from './vectorIndex.js';
+
+// Create index with 384 dimensions
+const vectorIndex = new VectorIndex(384);
+
+// Add question embeddings
+for (const quiz of mlQuizzes) {
+  const embedding = await embed(quiz);
+  vectorIndex.add(embedding, { text: quiz });
+}
+
+// Search for similar questions
+const results = vectorIndex.search(queryEmbedding, 3);
+// Returns top 3 most similar questions
+```
+
+This powers a search feature where users can find related ML concepts!
+
+## Try It Yourself
+
+I've open-sourced the complete project:
+
+👉 **[Browser Embeddings Quiz on GitHub](https://github.com/micrometre/browser-embeddings)**
+
+Clone it and run:
+
+```bash
+git clone https://github.com/micrometre/browser-embeddings
+cd browser-embeddings
+npm install
+npm run dev
+```
+
+## What's Next?
+
+This approach opens up exciting possibilities:
+
+- 📝 **Essay grading** — Grade long-form answers semantically
+- 🌍 **Multi-language** — Same embeddings work across languages
+- 🎓 **Adaptive learning** — Suggest topics based on weak answers
+- 💬 **Conversational quizzes** — Natural language Q&A
+
+## Conclusion
+
+By combining Transformers.js with cosine similarity, we've built a quiz system that:
+
+- ✅ Understands meaning, not just exact text
+- ✅ Runs 100% in the browser
+- ✅ Respects user privacy
+- ✅ Works offline after initial load
+- ✅ Provides nuanced feedback
+
+The future of educational technology isn't just about grading right or wrong — it's about understanding *how* someone answered and providing meaningful feedback.
+
+---
+
+Have questions or built something cool with Transformers.js? I'd love to hear about it!
+
+[Get In Touch](https://henok.cloud/contact)

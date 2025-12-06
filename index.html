@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ML Quiz Embeddings - Browser Vector Search</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #e0e0e0;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 0.5rem;
+      color: #00d9ff;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 2rem;
+    }
+    .status {
+      background: #1e2a3a;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.5rem 0;
+    }
+    .status-icon {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #444;
+    }
+    .status-icon.loading {
+      background: #ffa500;
+      animation: pulse 1s infinite;
+    }
+    .status-icon.ready {
+      background: #00ff88;
+    }
+    .status-icon.error {
+      background: #ff4444;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #333;
+      border-radius: 3px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00d9ff, #00ff88);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .search-section {
+      background: #1e2a3a;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .search-box {
+      display: flex;
+      gap: 1rem;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 2px solid #333;
+      border-radius: 6px;
+      background: #0d1520;
+      color: #fff;
+      font-size: 1rem;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #00d9ff;
+    }
+    button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #00d9ff, #0099cc);
+      color: #000;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .quizzes-section {
+      background: #1e2a3a;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .quizzes-section h2 {
+      margin-bottom: 1rem;
+      color: #00d9ff;
+      font-size: 1.1rem;
+    }
+    .quiz-item {
+      background: #0d1520;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin: 0.5rem 0;
+      border-left: 3px solid #333;
+    }
+    .quiz-item.indexed {
+      border-left-color: #00ff88;
+    }
+    .results-section {
+      background: #1e2a3a;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    .results-section h2 {
+      margin-bottom: 1rem;
+      color: #00d9ff;
+      font-size: 1.1rem;
+    }
+    .result-item {
+      background: #0d1520;
+      border-radius: 6px;
+      padding: 1rem;
+      margin: 0.75rem 0;
+      border-left: 3px solid #00d9ff;
+    }
+    .result-score {
+      display: inline-block;
+      background: #00d9ff;
+      color: #000;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .result-text {
+      color: #e0e0e0;
+    }
+    .log {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #0d1520;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      margin: 0.25rem 0;
+      color: #888;
+    }
+    .log-entry.info { color: #00d9ff; }
+    .log-entry.success { color: #00ff88; }
+    .log-entry.error { color: #ff4444; }
+    
+    /* Quiz Section Styles */
+    .quiz-section {
+      background: linear-gradient(135deg, #1e2a3a 0%, #2a3f5f 100%);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid #00d9ff33;
+    }
+    .quiz-section h2 {
+      margin-bottom: 1rem;
+      color: #00d9ff;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .quiz-progress {
+      color: #888;
+      font-size: 0.9rem;
+    }
+    .quiz-score {
+      background: #00ff8822;
+      color: #00ff88;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .quiz-question {
+      background: #0d1520;
+      padding: 1.25rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      line-height: 1.5;
+      border-left: 4px solid #00d9ff;
+    }
+    .quiz-answer-input {
+      width: 100%;
+      min-height: 100px;
+      padding: 1rem;
+      border: 2px solid #333;
+      border-radius: 6px;
+      background: #0d1520;
+      color: #fff;
+      font-size: 1rem;
+      font-family: inherit;
+      resize: vertical;
+      margin-bottom: 1rem;
+    }
+    .quiz-answer-input:focus {
+      outline: none;
+      border-color: #00d9ff;
+    }
+    .quiz-answer-input:disabled {
+      opacity: 0.6;
+    }
+    .quiz-buttons {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .quiz-buttons button {
+      padding: 0.6rem 1.2rem;
+      font-size: 0.95rem;
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #666, #444);
+      color: #fff;
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #00ff88, #00cc6a);
+      color: #000;
+    }
+    .quiz-feedback {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: #0d1520;
+      display: none;
+    }
+    .quiz-feedback:not(:empty) {
+      display: block;
+    }
+    .feedback-score {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .score-label {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    .similarity-score {
+      background: #ffffff22;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    .quiz-feedback.excellent .feedback-score { color: #00ff88; }
+    .quiz-feedback.good .feedback-score { color: #7fff00; }
+    .quiz-feedback.partial .feedback-score { color: #ffa500; }
+    .quiz-feedback.incorrect .feedback-score { color: #ff6b6b; }
+    .expected-answer {
+      color: #aaa;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      padding-top: 0.5rem;
+      border-top: 1px solid #333;
+    }
+    .expected-answer strong {
+      color: #00d9ff;
+    }
+    .hint {
+      color: #ffd700;
+      font-style: italic;
+    }
+    .quiz-feedback.hint-shown {
+      background: #ffd70011;
+      border: 1px solid #ffd70033;
+    }
+    .quiz-complete {
+      text-align: center;
+      padding: 1rem;
+    }
+    .quiz-complete h3 {
+      color: #00ff88;
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .quiz-complete p {
+      color: #ccc;
+      margin: 0.3rem 0;
+    }
+    
+    /* Educational Info Section */
+    .info-section {
+      background: #1e2a3a;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .info-section h2 {
+      color: #00d9ff;
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .info-card {
+      background: #0d1520;
+      border-radius: 8px;
+      padding: 1rem;
+      border-left: 3px solid #00d9ff;
+    }
+    .info-card h3 {
+      color: #00d9ff;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .info-card p {
+      color: #aaa;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin: 0;
+    }
+    .info-card code {
+      background: #ffffff11;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #00ff88;
+    }
+    .scoring-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+    }
+    .scoring-table th,
+    .scoring-table td {
+      padding: 0.5rem;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+    .scoring-table th {
+      color: #00d9ff;
+      font-weight: 600;
+    }
+    .scoring-table td {
+      color: #ccc;
+    }
+    .scoring-table .excellent { color: #00ff88; }
+    .scoring-table .good { color: #7fff00; }
+    .scoring-table .partial { color: #ffa500; }
+    .scoring-table .try-again { color: #ff6b6b; }
+    .collapsible-toggle {
+      background: none;
+      border: 1px solid #00d9ff44;
+      color: #00d9ff;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      transition: all 0.2s;
+    }
+    .collapsible-toggle:hover {
+      background: #00d9ff22;
+      border-color: #00d9ff;
+    }
+    .collapsible-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .collapsible-content.expanded {
+      max-height: 500px;
+    }
+    .formula-box {
+      background: #0a0f18;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-top: 0.75rem;
+      text-align: center;
+    }
+    .formula-box .formula {
+      color: #00ff88;
+      font-family: 'Courier New', monospace;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .formula-box .formula-desc {
+      color: #888;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧠 ML Quiz Vector Search</h1>
+    <p class="subtitle">Browser-based embeddings with FAISS vector database</p>
+
+    <div class="status">
+      <div class="status-item">
+        <div class="status-icon" id="model-status"></div>
+        <span id="model-status-text">Embedding model: Not loaded</span>
+      </div>
+      <div class="status-item">
+        <div class="status-icon" id="faiss-status"></div>
+        <span id="faiss-status-text">FAISS index: Not initialized</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <div class="search-section">
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Search for similar ML questions..." disabled>
+        <button id="search-btn" disabled>Search</button>
+      </div>
+    </div>
+
+    <!-- Interactive Quiz Section -->
+    <div class="quiz-section">
+      <h2>🎯 Interactive ML Quiz</h2>
+      <div class="quiz-header">
+        <span class="quiz-progress" id="quiz-progress">Question 1 of 5</span>
+        <span class="quiz-score" id="quiz-score">Score: 0/0 (0%)</span>
+      </div>
+      <div class="quiz-question" id="quiz-question">Loading quiz...</div>
+      <textarea 
+        class="quiz-answer-input" 
+        id="quiz-answer" 
+        placeholder="Type your answer here... (Press Enter to submit)"
+        disabled
+      ></textarea>
+      <div class="quiz-buttons">
+        <button id="submit-answer-btn" disabled>Submit Answer</button>
+        <button id="show-hint-btn" class="btn-secondary" disabled>Show Hint</button>
+        <button id="next-question-btn" class="btn-success" style="display: none;">Next Question</button>
+      </div>
+      <div class="quiz-feedback" id="quiz-feedback"></div>
+    </div>
+
+    <!-- Educational Info Section -->
+    <div class="info-section">
+      <h2>📖 How Does Semantic Quiz Grading Work?</h2>
+      <div class="info-grid">
+        <div class="info-card">
+          <h3>🔤 Text to Numbers</h3>
+          <p>Your answer is converted into a <strong>384-dimensional vector</strong> (a list of 384 numbers) using the <code>all-MiniLM-L6-v2</code> transformer model. This captures the <em>meaning</em> of your text, not just the exact words.</p>
+        </div>
+        <div class="info-card">
+          <h3>📐 Cosine Similarity</h3>
+          <p>We compare your answer vector to the expected answer vector by measuring the <strong>angle</strong> between them. Smaller angle = higher similarity. This means paraphrased answers still get credit!</p>
+          <div class="formula-box">
+            <div class="formula">similarity = (A · B) / (||A|| × ||B||)</div>
+            <div class="formula-desc">Dot product divided by the product of magnitudes</div>
+          </div>
+        </div>
+        <div class="info-card">
+          <h3>🧠 Why Embeddings?</h3>
+          <p>Unlike exact text matching, embeddings understand that <em>"neural networks learn from errors"</em> and <em>"NNs adjust weights based on mistakes"</em> mean the same thing. This is the power of semantic understanding!</p>
+        </div>
+        <div class="info-card">
+          <h3>⚡ 100% Browser-Based</h3>
+          <p>Everything runs locally in your browser using <strong>WebAssembly (WASM)</strong>. No data is sent to any server - your answers stay private. The model is cached after first load for instant startup.</p>
+        </div>
+      </div>
+      
+      <button class="collapsible-toggle" onclick="toggleScoring()">📊 View Scoring Breakdown</button>
+      <div class="collapsible-content" id="scoring-details">
+        <div class="info-card" style="margin-top: 1rem;">
+          <h3>🎯 Scoring System</h3>
+          <p>Your score is determined by how semantically similar your answer is to the expected answer:</p>
+          <table class="scoring-table">
+            <thead>
+              <tr>
+                <th>Similarity</th>
+                <th>Rating</th>
+                <th>Points</th>
+                <th>Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="excellent">≥ 85%</td>
+                <td class="excellent">Excellent!</td>
+                <td>1.0</td>
+                <td>Your answer captures the core concept accurately</td>
+              </tr>
+              <tr>
+                <td class="good">≥ 70%</td>
+                <td class="good">Good!</td>
+                <td>0.8</td>
+                <td>Good understanding with minor gaps</td>
+              </tr>
+              <tr>
+                <td class="partial">≥ 55%</td>
+                <td class="partial">Partial</td>
+                <td>0.5</td>
+                <td>Some relevant concepts mentioned</td>
+              </tr>
+              <tr>
+                <td class="try-again">&lt; 55%</td>
+                <td class="try-again">Try Again</td>
+                <td>0</td>
+                <td>Answer doesn't match the expected concept</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="quizzes-section">
+      <h2>📚 Indexed Quiz Questions</h2>
+      <div id="quizzes-list"></div>
+    </div>
+
+    <div class="results-section">
+      <h2>🔍 Search Results</h2>
+      <div id="results-list">
+        <p style="color: #666;">Enter a query to find similar questions...</p>
+      </div>
+    </div>
+
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    function toggleScoring() {
+      const content = document.getElementById('scoring-details');
+      const btn = document.querySelector('.collapsible-toggle');
+      content.classList.toggle('expanded');
+      btn.textContent = content.classList.contains('expanded') 
+        ? '📊 Hide Scoring Breakdown' 
+        : '📊 View Scoring Breakdown';
+    }
+  </script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
