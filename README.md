@@ -6,10 +6,10 @@ This project demonstrates how to perform sentence embeddings and vector similari
 
 - **In-Browser Embeddings**: Uses Hugging Face Transformers.js to generate embeddings directly in the client, with no server-side inference required.
 - **Vector Search**: Implements a custom vector index with cosine similarity search to find semantically similar text.
-- **🎯 Interactive ML Quiz**: Take an interactive quiz with **semantic answer evaluation** - your answers are graded using AI embeddings, not just exact text matching!
+- **🎯 Interactive Quiz**: Take an interactive quiz with **semantic answer evaluation** - your answers are graded using AI embeddings, not just exact text matching!
 - **Smart Answer Grading**: Paraphrased or differently-worded answers still get credit based on semantic similarity.
+- **Beginner-Friendly Questions**: Simple, universally-known questions (geography, science, general knowledge) that anyone can test without specialized knowledge.
 - **Interactive UI**: Visualizes the model loading process, indexing status, and search results.
-- **ML Quiz Dataset**: Includes a sample dataset of Machine Learning quiz questions to demonstrate the search capabilities.
 
 ## Tech Stack
 
@@ -30,7 +30,7 @@ This project demonstrates how to perform sentence embeddings and vector similari
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/micrometre/embeddings 
    cd browser-embeddings
    ```
 
@@ -74,7 +74,7 @@ npm run preview
 1. **Model Loading**: When the application starts, it downloads a lightweight sentence embedding model (`Xenova/all-MiniLM-L6-v2`) using `@huggingface/transformers`. This model runs entirely in your browser using WebAssembly.
 
 2. **Indexing**:
-   - The application takes a predefined list of ML questions.
+   - The application takes a predefined list of general knowledge questions (capitals, planets, science basics, etc.).
    - For each question, it generates a 384-dimensional embedding vector using the model.
    - These vectors, along with their metadata (the original text), are stored in the `VectorIndex`.
    - The index is also saved to `IndexedDB` so it doesn't need to be rebuilt on every page reload.
@@ -87,7 +87,7 @@ npm run preview
    - The top 3 most similar questions are returned and displayed to the user.
 
 4. **Interactive Quiz with Semantic Grading**:
-   - The quiz presents ML questions and accepts free-text answers.
+   - The quiz presents general knowledge questions and accepts free-text answers.
    - When you submit an answer, it's converted to an embedding vector.
    - Your answer embedding is compared to the expected answer embedding using cosine similarity.
    - **Scoring System**:
@@ -99,13 +99,38 @@ npm run preview
      | < 55% | Try Again | 0 |
    - This allows paraphrased or differently-worded correct answers to receive appropriate credit.
 
+## Example Questions
+
+### 🔍 Search Questions (Vector Index)
+Simple factual questions anyone can search variations of:
+- "What is the capital city of France?" → Try searching "French capital" or "Paris city"
+- "What planet is known as the Red Planet?" → Try "Mars planet" or "red colored planet"
+- "Which animal is known as man's best friend?" → Try "loyal pet" or "dogs"
+
+### 🎯 Quiz Questions (Semantic Grading)
+These show how different phrasings get credit:
+
+| Question | Example Answers That Score Well |
+|----------|----------------------------------|
+| Capital of France? | "Paris", "It's Paris", "The capital is Paris" |
+| What do plants need? | "Water, sunlight, and CO2", "Sun and water for photosynthesis" |
+| Why is sky blue? | "Light scattering", "Blue light scatters more" |
+| Why do seasons change? | "Earth's tilt", "Planet tilts toward/away from sun" |
+| Why do we need sleep? | "Rest and recovery", "Body repairs itself" |
+
 ## Why Semantic Answer Matching?
 
 Traditional quiz systems require exact text matching, which is frustrating when you know the concept but phrase it differently. By using embeddings:
 
-- ✅ "Neural networks learn by adjusting weights based on error gradients" matches well with the expected answer about backpropagation
+- ✅ "Paris" and "The capital of France is Paris" both match the expected answer
+- ✅ "Earth tilts on its axis" matches answers about why seasons change
 - ✅ Answers in your own words get credit if they're semantically correct
 - ✅ No need for predefined answer variants or regex patterns
+
+The subtle relationships help demonstrate embeddings:
+- **Geography** → capitals, continents, oceans
+- **Science** → photosynthesis, light, astronomy  
+- **Biology** → sleep, animals, plants
 
 ## License
 

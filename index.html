@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ML Quiz Embeddings - Browser Vector Search</title>
+  <title>Semantic Quiz - AI-Powered Answer Grading</title>
   <style>
     * {
       box-sizing: border-box;
@@ -77,16 +77,7 @@
       width: 0%;
       transition: width 0.3s;
     }
-    .search-section {
-      background: #1e2a3a;
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-    .search-box {
-      display: flex;
-      gap: 1rem;
-    }
+
     input[type="text"] {
       flex: 1;
       padding: 0.75rem 1rem;
@@ -117,74 +108,9 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
-    .quizzes-section {
-      background: #1e2a3a;
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-    .quizzes-section h2 {
-      margin-bottom: 1rem;
-      color: #00d9ff;
-      font-size: 1.1rem;
-    }
-    .quiz-item {
-      background: #0d1520;
-      border-radius: 6px;
-      padding: 0.75rem 1rem;
-      margin: 0.5rem 0;
-      border-left: 3px solid #333;
-    }
-    .quiz-item.indexed {
-      border-left-color: #00ff88;
-    }
-    .results-section {
-      background: #1e2a3a;
-      border-radius: 8px;
-      padding: 1.5rem;
-    }
-    .results-section h2 {
-      margin-bottom: 1rem;
-      color: #00d9ff;
-      font-size: 1.1rem;
-    }
-    .result-item {
-      background: #0d1520;
-      border-radius: 6px;
-      padding: 1rem;
-      margin: 0.75rem 0;
-      border-left: 3px solid #00d9ff;
-    }
-    .result-score {
-      display: inline-block;
-      background: #00d9ff;
-      color: #000;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-    }
-    .result-text {
-      color: #e0e0e0;
-    }
-    .log {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: #0d1520;
-      border-radius: 6px;
-      font-family: monospace;
-      font-size: 0.85rem;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    .log-entry {
-      margin: 0.25rem 0;
-      color: #888;
-    }
-    .log-entry.info { color: #00d9ff; }
-    .log-entry.success { color: #00ff88; }
-    .log-entry.error { color: #ff4444; }
+
+
+
     
     /* Quiz Section Styles */
     .quiz-section {
@@ -298,6 +224,22 @@
     .quiz-feedback.good .feedback-score { color: #7fff00; }
     .quiz-feedback.partial .feedback-score { color: #ffa500; }
     .quiz-feedback.incorrect .feedback-score { color: #ff6b6b; }
+    .btn-retry {
+      background: linear-gradient(135deg, #ff6b6b, #cc5555);
+      color: #fff;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-left: auto;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .btn-retry:hover {
+      transform: translateY(-2px);
+      opacity: 0.9;
+    }
     .expected-answer {
       color: #aaa;
       font-size: 0.95rem;
@@ -445,33 +387,22 @@
 </head>
 <body>
   <div class="container">
-    <h1>🧠 ML Quiz Vector Search</h1>
-    <p class="subtitle">Browser-based embeddings with FAISS vector database</p>
+    <h1>🧠 Semantic Quiz</h1>
+    <p class="subtitle">AI-powered answer grading using Transformers.js - 100% in your browser</p>
 
     <div class="status">
       <div class="status-item">
         <div class="status-icon" id="model-status"></div>
-        <span id="model-status-text">Embedding model: Not loaded</span>
-      </div>
-      <div class="status-item">
-        <div class="status-icon" id="faiss-status"></div>
-        <span id="faiss-status-text">FAISS index: Not initialized</span>
+        <span id="model-status-text">Loading AI model...</span>
       </div>
       <div class="progress-bar">
         <div class="progress-fill" id="progress-fill"></div>
       </div>
     </div>
 
-    <div class="search-section">
-      <div class="search-box">
-        <input type="text" id="search-input" placeholder="Search for similar ML questions..." disabled>
-        <button id="search-btn" disabled>Search</button>
-      </div>
-    </div>
-
     <!-- Interactive Quiz Section -->
     <div class="quiz-section">
-      <h2>🎯 Interactive ML Quiz</h2>
+      <h2>🎯 Test Your Knowledge</h2>
       <div class="quiz-header">
         <span class="quiz-progress" id="quiz-progress">Question 1 of 5</span>
         <span class="quiz-score" id="quiz-score">Score: 0/0 (0%)</span>
@@ -509,7 +440,7 @@
         </div>
         <div class="info-card">
           <h3>🧠 Why Embeddings?</h3>
-          <p>Unlike exact text matching, embeddings understand that <em>"neural networks learn from errors"</em> and <em>"NNs adjust weights based on mistakes"</em> mean the same thing. This is the power of semantic understanding!</p>
+          <p>Unlike exact text matching, embeddings understand that <em>"Paris is the capital"</em> and <em>"The capital of France is Paris"</em> mean the same thing. This is the power of semantic understanding!</p>
         </div>
         <div class="info-card">
           <h3>⚡ 100% Browser-Based</h3>
@@ -562,19 +493,6 @@
       </div>
     </div>
 
-    <div class="quizzes-section">
-      <h2>📚 Indexed Quiz Questions</h2>
-      <div id="quizzes-list"></div>
-    </div>
-
-    <div class="results-section">
-      <h2>🔍 Search Results</h2>
-      <div id="results-list">
-        <p style="color: #666;">Enter a query to find similar questions...</p>
-      </div>
-    </div>
-
-    <div class="log" id="log"></div>
   </div>
 
   <script>

@@ -3,7 +3,7 @@ title: "Building a Semantic Quiz with AI-Powered Answer Grading in the Browser"
 description: "Learn how to create an interactive quiz that grades free-text answers using semantic similarity - all running 100% client-side with Transformers.js"
 pubDate: "December 6, 2025"
 author: "Henok Wehibe"
-tags: ["ai", "transformers.js", "javascript", "tutorial", "machine-learning"]
+tags: ["ai", "transformers.js", "javascript", "tutorial", "embeddings"]
 featured: true
 image: "/images/semantic-quiz-hero.png"
 readingTime: "10 min read"
@@ -11,9 +11,9 @@ readingTime: "10 min read"
 
 # Building a Semantic Quiz with AI-Powered Answer Grading in the Browser
 
-What if your quiz could understand *meaning* instead of just matching exact text? Imagine a system where "neural networks learn from errors" and "NNs adjust weights based on mistakes" both get full credit — because they mean the same thing.
+What if your quiz could understand *meaning* instead of just matching exact text? Imagine a system where "Paris is the capital" and "The capital of France is Paris" both get full credit — because they mean the same thing.
 
-In this article, I'll show you how I built an interactive ML quiz with **semantic answer grading** using Transformers.js — all running 100% in the browser with no server required.
+In this article, I'll show you how I built an interactive quiz with **semantic answer grading** using Transformers.js — all running 100% in the browser with no server required. The best part? It uses simple, universally-known questions that anyone can test without specialized knowledge.
 
 ## The Problem with Traditional Quizzes
 
@@ -122,19 +122,24 @@ npm install @huggingface/transformers
 
 ### Quiz Data Structure
 
-Define questions with expected answers and hints:
+Define questions with expected answers and hints. I chose simple, universally-known questions so anyone can test the semantic matching:
 
 ```javascript
 const quizData = [
   {
-    question: "What is the main goal of supervised learning?",
-    answer: "Supervised learning aims to learn a mapping from inputs to outputs using labeled training data, where the correct answers are provided during training.",
-    hint: "Think about what makes it 'supervised' - what extra information do you have?"
+    question: "What is the capital city of France?",
+    answer: "Paris is the capital city of France, located in the northern part of the country along the Seine River.",
+    hint: "It's famous for the Eiffel Tower and is known as the City of Light."
   },
   {
-    question: "What problem does regularization solve?",
-    answer: "Regularization prevents overfitting by adding a penalty term to the loss function that discourages complex models, helping the model generalize better to unseen data.",
-    hint: "Consider what happens when a model is too complex."
+    question: "What do plants need to make their own food?",
+    answer: "Plants need sunlight, water, and carbon dioxide to perform photosynthesis and produce glucose for energy.",
+    hint: "Think about what plants get from the sun, soil, and air."
+  },
+  {
+    question: "Why is the sky blue?",
+    answer: "The sky appears blue because sunlight is scattered by the atmosphere, and blue light is scattered more than other colors due to its shorter wavelength.",
+    hint: "It has to do with how light interacts with air molecules."
   },
   // ... more questions
 ];
@@ -222,16 +227,25 @@ Here's how I structured the quiz interface:
 
 ## Real-World Examples
 
-Here's how semantic matching performs on actual answers:
+Here's how semantic matching performs on actual answers. I chose simple questions so you can easily verify the results:
 
-### Question: "What is the main goal of supervised learning?"
+### Question: "What is the capital city of France?"
 
 | User Answer | Similarity | Grade |
 |-------------|------------|-------|
-| "Learning from labeled data to predict outputs" | 87% | ✅ Excellent |
-| "Training a model with examples that have correct answers" | 78% | ✅ Good |
-| "Machine learning with training data" | 61% | ⚠️ Partial |
-| "Neural networks" | 42% | ❌ Try Again |
+| "Paris is the capital of France" | 92% | ✅ Excellent |
+| "The capital is Paris" | 85% | ✅ Excellent |
+| "Paris" | 78% | ✅ Good |
+| "A city in Europe" | 48% | ❌ Try Again |
+
+### Question: "Why is the sky blue?"
+
+| User Answer | Similarity | Grade |
+|-------------|------------|-------|
+| "Light scattering in the atmosphere makes blue visible" | 88% | ✅ Excellent |
+| "Blue light scatters more than other colors" | 82% | ✅ Good |
+| "Because of the sun" | 55% | ⚠️ Partial |
+| "It just is" | 32% | ❌ Try Again |
 
 The model understands that different phrasings of the same concept should receive credit!
 
@@ -268,10 +282,19 @@ import { VectorIndex } from './vectorIndex.js';
 // Create index with 384 dimensions
 const vectorIndex = new VectorIndex(384);
 
+// Index includes questions like:
+const questions = [
+  "What is the capital city of France?",
+  "How many continents are there on Earth?",
+  "What planet is known as the Red Planet?",
+  "What is the largest ocean on Earth?",
+  // ... more questions
+];
+
 // Add question embeddings
-for (const quiz of mlQuizzes) {
-  const embedding = await embed(quiz);
-  vectorIndex.add(embedding, { text: quiz });
+for (const question of questions) {
+  const embedding = await embed(question);
+  vectorIndex.add(embedding, { text: question });
 }
 
 // Search for similar questions
@@ -279,7 +302,10 @@ const results = vectorIndex.search(queryEmbedding, 3);
 // Returns top 3 most similar questions
 ```
 
-This powers a search feature where users can find related ML concepts!
+This powers a search feature where users can find related topics! Try searching:
+- "French capital" → finds "What is the capital city of France?"
+- "Mars" → finds "What planet is known as the Red Planet?"
+- "ocean size" → finds "What is the largest ocean on Earth?"
 
 ## Try It Yourself
 
