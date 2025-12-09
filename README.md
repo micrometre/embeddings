@@ -1,22 +1,21 @@
-# Browser Embeddings & Vector Search
+# Semantic Quiz
 
-This project demonstrates how to perform sentence embeddings and vector similarity search entirely in the browser using `@huggingface/transformers` (Transformers.js) and a custom vector index implementation.
+An AI-powered quiz application that grades answers using semantic similarity, running 100% in your browser with Transformers.js.
 
 ## Features
 
-- **In-Browser Embeddings**: Uses Hugging Face Transformers.js to generate embeddings directly in the client, with no server-side inference required.
-- **Vector Search**: Implements a custom vector index with cosine similarity search to find semantically similar text.
-- **🎯 Interactive Quiz**: Take an interactive quiz with **semantic answer evaluation** - your answers are graded using AI embeddings, not just exact text matching!
-- **Smart Answer Grading**: Paraphrased or differently-worded answers still get credit based on semantic similarity.
-- **Beginner-Friendly Questions**: Simple, universally-known questions (geography, science, general knowledge) that anyone can test without specialized knowledge.
-- **Interactive UI**: Visualizes the model loading process, indexing status, and search results.
+- **🎯 Semantic Answer Grading**: Your answers are graded using AI embeddings, not just exact text matching - paraphrased answers get credit!
+- **🧠 In-Browser AI**: Uses Hugging Face Transformers.js to run the `all-MiniLM-L6-v2` model entirely in your browser via WebAssembly.
+- **🔒 Privacy-First**: No data is sent to any server - everything runs locally.
+- **⚡ Fast & Cached**: The model is cached after first load for instant startup.
+- **📊 Smart Scoring**: Tiered scoring system based on cosine similarity (Excellent/Good/Partial/Try Again).
+- **💡 Hints & Retry**: Get hints when stuck, retry incorrect answers to improve.
 
 ## Tech Stack
 
 - **Vite**: Fast frontend build tool and development server.
-- **@huggingface/transformers**: Library for running state-of-the-art machine learning models in the browser using WebAssembly (WASM).
+- **@huggingface/transformers**: Library for running ML models in the browser using WebAssembly (WASM).
 - **Vanilla JavaScript**: Built with standard ES modules and modern JavaScript features.
-- **IndexedDB**: Browser storage for caching embeddings and vector indices.
 - **CSS**: Custom styling with a dark theme.
 
 ## Getting Started
@@ -65,72 +64,46 @@ npm run preview
 
 ## Project Structure
 
-- `src/main.js`: The main entry point. Handles application state, UI updates, model loading, quiz logic, and search interactions.
-- `src/vectorIndex.js`: A custom class that manages vector storage and implements the cosine similarity algorithm for search.
-- `index.html`: The main HTML file containing the application layout and styles.
+- `src/main.js`: Main application - handles model loading, quiz logic, semantic grading, and UI.
+- `index.html`: The HTML file containing the application layout, styles, and educational content.
 
 ## How It Works
 
-1. **Model Loading**: When the application starts, it downloads a lightweight sentence embedding model (`Xenova/all-MiniLM-L6-v2`) using `@huggingface/transformers`. This model runs entirely in your browser using WebAssembly.
+1. **Model Loading**: When the app starts, it downloads a lightweight sentence embedding model (`Xenova/all-MiniLM-L6-v2`) using Transformers.js. This model runs entirely in your browser using WebAssembly.
 
-2. **Indexing**:
-   - The application takes a predefined list of general knowledge questions (capitals, planets, science basics, etc.).
-   - For each question, it generates a 384-dimensional embedding vector using the model.
-   - These vectors, along with their metadata (the original text), are stored in the `VectorIndex`.
-   - The index is also saved to `IndexedDB` so it doesn't need to be rebuilt on every page reload.
+2. **Answer Embedding**: 
+   - Quiz answers are pre-computed into 384-dimensional embedding vectors.
+   - When you submit an answer, your text is also converted to an embedding.
 
-3. **Search Process**:
-   - When a user enters a query, the model generates an embedding vector for that query.
-   - The `VectorIndex` calculates the **cosine similarity** between the query vector and every vector in the index.
-   - **Cosine Similarity** measures the cosine of the angle between two vectors. A value closer to 1 indicates high similarity (small angle), while a value closer to -1 indicates dissimilarity.
-   - The results are sorted by their similarity score in descending order.
-   - The top 3 most similar questions are returned and displayed to the user.
+3. **Semantic Comparison**:
+   - Your answer embedding is compared to the expected answer using **cosine similarity**.
+   - Cosine similarity measures the angle between two vectors - a value closer to 1 means high similarity.
+   - This allows "Paris" and "The capital is Paris" to both match correctly!
 
-4. **Interactive Quiz with Semantic Grading**:
-   - The quiz presents general knowledge questions and accepts free-text answers.
-   - When you submit an answer, it's converted to an embedding vector.
-   - Your answer embedding is compared to the expected answer embedding using cosine similarity.
-   - **Scoring System**:
-     | Similarity | Rating | Points |
-     |------------|--------|--------|
-     | ≥ 85% | Excellent! | 1.0 |
-     | ≥ 70% | Good! | 0.8 |
-     | ≥ 55% | Partial | 0.5 |
-     | < 55% | Try Again | 0 |
-   - This allows paraphrased or differently-worded correct answers to receive appropriate credit.
+4. **Scoring System**:
+   | Similarity | Rating | Points |
+   |------------|--------|--------|
+   | ≥ 85% | Excellent! | 1.0 |
+   | ≥ 70% | Good! | 0.8 |
+   | ≥ 55% | Partial | 0.5 |
+   | < 55% | Try Again | 0 |
 
-## Example Questions
-
-### 🔍 Search Questions (Vector Index)
-Simple factual questions anyone can search variations of:
-- "What is the capital city of France?" → Try searching "French capital" or "Paris city"
-- "What planet is known as the Red Planet?" → Try "Mars planet" or "red colored planet"
-- "Which animal is known as man's best friend?" → Try "loyal pet" or "dogs"
-
-### 🎯 Quiz Questions (Semantic Grading)
-These show how different phrasings get credit:
+## Example Quiz Questions
 
 | Question | Example Answers That Score Well |
 |----------|----------------------------------|
 | Capital of France? | "Paris", "It's Paris", "The capital is Paris" |
-| What do plants need? | "Water, sunlight, and CO2", "Sun and water for photosynthesis" |
-| Why is sky blue? | "Light scattering", "Blue light scatters more" |
-| Why do seasons change? | "Earth's tilt", "Planet tilts toward/away from sun" |
-| Why do we need sleep? | "Rest and recovery", "Body repairs itself" |
+| Days in a year? | "365", "There are 365 days", "365 days in a year" |
+| How many continents? | "7", "Seven continents", "There are 7 continents" |
 
 ## Why Semantic Answer Matching?
 
 Traditional quiz systems require exact text matching, which is frustrating when you know the concept but phrase it differently. By using embeddings:
 
-- ✅ "Paris" and "The capital of France is Paris" both match the expected answer
-- ✅ "Earth tilts on its axis" matches answers about why seasons change
-- ✅ Answers in your own words get credit if they're semantically correct
+- ✅ "Paris" and "The capital of France is Paris" both match
+- ✅ "365" and "There are 365 days in a year" both score well
+- ✅ Answers in your own words get credit if semantically correct
 - ✅ No need for predefined answer variants or regex patterns
-
-The subtle relationships help demonstrate embeddings:
-- **Geography** → capitals, continents, oceans
-- **Science** → photosynthesis, light, astronomy  
-- **Biology** → sleep, animals, plants
 
 ## License
 
