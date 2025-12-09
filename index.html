@@ -428,11 +428,14 @@
       <div class="info-grid">
         <div class="info-card">
           <h3>🔤 Text to Numbers</h3>
-          <p>Your answer is converted into a <strong>384-dimensional vector</strong> (a list of 384 numbers) using the <code>all-MiniLM-L6-v2</code> transformer model. This captures the <em>meaning</em> of your text, not just the exact words.</p>
+          <p>The answer is converted into a <strong>384-dimensional vector</strong> (a list of 384 numbers) using the 
+            <code>all-MiniLM-L6-v2</code> transformer model. This captures the <em>meaning</em> 
+            of the text, not just the exact words.</p>
         </div>
         <div class="info-card">
           <h3>📐 Cosine Similarity</h3>
-          <p>We compare your answer vector to the expected answer vector by measuring the <strong>angle</strong> between them. Smaller angle = higher similarity. This means paraphrased answers still get credit!</p>
+          <p>We compare the answer vector to the expected answer vector by measuring the
+             <strong>angle</strong> between them. Smaller angle = higher similarity. This means paraphrased answers still get credit!</p>
           <div class="formula-box">
             <div class="formula">similarity = (A · B) / (||A|| × ||B||)</div>
             <div class="formula-desc">Dot product divided by the product of magnitudes</div>
@@ -440,7 +443,8 @@
         </div>
         <div class="info-card">
           <h3>🧠 Why Embeddings?</h3>
-          <p>Unlike exact text matching, embeddings understand that <em>"Paris is the capital"</em> and <em>"The capital of France is Paris"</em> mean the same thing. This is the power of semantic understanding!</p>
+          <p>Unlike exact text matching, embeddings understand that 
+            <em>"Paris is the capital"</em> and <em>"The capital of France is Paris"</em> mean the same thing. This is the power of semantic understanding!</p>
         </div>
         <div class="info-card">
           <h3>⚡ 100% Browser-Based</h3>
