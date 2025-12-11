@@ -14,17 +14,17 @@ const quizData = [
   {
     question: "What is the capital city of France?",
     answer: "Paris is the capital city of France.",
-    hint: "It's famous for the Eiffel Tower and is known as the City of Light."
+    hint: "Paris is the capital city of France or The capital of France is Paris."
   },
   {
     question: "How many days are there in a year?",
     answer: "There are 365 days in a year.",
-    hint: "Think about the number of days it takes for the Earth to orbit the Sun."
+    hint: "There are 365 days in a year or In a year there are 365 days."
   },
   {
     question: "How many continents are there on Earth?",
     answer: "There are seven continents on Earth.",
-    hint: "Think about the major landmasses on the planet."
+    hint: "There are seven continents on Earth or Earth has seven continents."
   },
 ];
 
