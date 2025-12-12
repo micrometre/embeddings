@@ -61,7 +61,8 @@
     }
 
     .container {
-      max-width: 800px;
+      /* Increased max-width for larger screens */
+      max-width: 1400px;
       /* Focused App Width */
       margin: 0 auto;
       padding: var(--spacing-md);
@@ -489,7 +490,7 @@
 
     .info-card p {
       color: #fff;
-      font-size: 0.9rem;
+      font-size: 1.0rem;
       line-height: 1.5;
       margin: 0;
       background: var(--bg-card);
@@ -548,48 +549,6 @@
       color: #ff6b6b;
     }
 
-    .collapsible-toggle {
-      display: block;
-      width: 100%;
-      max-width: 400px;
-      margin: 1.5rem auto 0 auto;
-      padding: 0.75rem 1.25rem;
-      font-size: 1.1rem;
-      font-weight: 500;
-      background: #f5f5fa;
-      color: #00d9ff;
-      border: 2px solid #00d9ff44;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s, border 0.2s;
-      box-sizing: border-box;
-      text-align: center;
-      word-break: break-word;
-      z-index: 2;
-    }
-
-    .collapsible-toggle:hover {
-      background: #e0e7ff;
-      border-color: #00d9ff;
-
-      @media (max-width: 600px) {
-        .collapsible-toggle {
-          max-width: 98vw;
-          font-size: 1rem;
-          padding: 0.7rem 0.5rem;
-        }
-      }
-    }
-
-    .collapsible-content {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease-out;
-    }
-
-    .collapsible-content.expanded {
-      max-height: 500px;
-    }
 
     .formula-box {
       background: #0a0f18;
