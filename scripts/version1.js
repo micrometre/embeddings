@@ -98,17 +98,17 @@ async function evaluateAnswer() {
     const expectedEmbedding = answerEmbeddings[currentQuizIndex];
     const similarity = cosineSimilarity(userEmbedding, expectedEmbedding);
     console.log(similarity);
-
+    
     const scoreInfo = getScoreLabel(similarity);
     quizAttempts++;
     quizScore += scoreInfo.points;
-
+    
     const expectedAnswer = quizData[currentQuizIndex].answer;
-
-    const tryAgainButton = scoreInfo.points === 0
-      ? `<button class="btn-retry" onclick="window.retryAnswer()">🔄 Try Again</button>`
+    
+    const tryAgainButton = scoreInfo.points === 0 
+      ? `<button class="btn-retry" onclick="window.retryAnswer()">🔄 Try Again</button>` 
       : '';
-
+    
     quizFeedback.innerHTML = `
       <div class="feedback-score ${scoreInfo.class}">
         <span class="score-label">${scoreInfo.label}</span>
@@ -118,34 +118,12 @@ async function evaluateAnswer() {
       <div class="expected-answer">
         <strong>Expected answer:</strong> ${expectedAnswer}
       </div>
-      
-      <!-- Debug Info Section -->
-      <div class="debug-info">
-        <h4>🤓 Debug Details</h4>
-        <div class="debug-row">
-          <strong>Input Text:</strong> <span>"${userAnswer}"</span>
-        </div>
-        <div class="debug-row">
-          <strong>Expected Text:</strong> <span>"${expectedAnswer}"</span>
-        </div>
-         <div class="debug-row">
-          <strong>Cosine Similarity:</strong> <span>${similarity.toFixed(4)}</span>
-        </div>
-        <div class="debug-row">
-          <strong>User Vector (first/last 3):</strong>
-          <code class="vector-preview">[${userEmbedding.slice(0, 3).map(n => n.toFixed(3)).join(', ')}, ..., ${userEmbedding.slice(-3).map(n => n.toFixed(3)).join(', ')}]</code>
-        </div>
-        <div class="debug-row">
-          <strong>Expected Vector (first/last 3):</strong>
-          <code class="vector-preview">[${expectedEmbedding.slice(0, 3).map(n => n.toFixed(3)).join(', ')}, ..., ${expectedEmbedding.slice(-3).map(n => n.toFixed(3)).join(', ')}]</code>
-        </div>
-      </div>
     `;
     quizFeedback.className = `quiz-feedback ${scoreInfo.class}`;
-
+    
     updateQuizScore();
     nextQuestionBtn.style.display = 'inline-block';
-
+    
   } catch (error) {
     console.error('Error evaluating answer:', error);
     quizFeedback.innerHTML = '<span class="feedback-incorrect">Error evaluating answer. Please try again.</span>';
@@ -229,12 +207,12 @@ function cosineSimilarity(a, b) {
 
 async function init() {
   updateStatus('loading', 'Loading AI model...');
-
+  
   try {
     embedder = await pipeline(
       'feature-extraction',
       'Xenova/all-MiniLM-L6-v2',
-      {
+      { 
         dtype: 'q8',
         progress_callback: (progress) => {
           if (progress.status === 'progress') {
@@ -245,19 +223,19 @@ async function init() {
         }
       }
     );
-
+    
     progressFill.style.width = '100%';
     updateStatus('ready', 'AI model ready!');
-
+    
     console.log('Pre-computing answer embeddings...');
     for (const quiz of quizData) {
       const embedding = await embed(quiz.answer);
       answerEmbeddings.push(embedding);
     }
     console.log('Answer embeddings ready!');
-
+    
     displayQuizQuestion();
-
+    
   } catch (error) {
     console.error('Initialization error:', error);
     updateStatus('error', `Error: ${error.message}`);
@@ -281,85 +259,5 @@ quizAnswer.addEventListener('keydown', (e) => {
     evaluateAnswer();
   }
 });
-
-// Live Debugging Logic
-const liveDebugContainer = document.getElementById('live-debug-container');
-const liveSimilarity = document.getElementById('live-similarity');
-const liveInputVector = document.getElementById('live-input-vector');
-const liveExpectedVector = document.getElementById('live-expected-vector');
-
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
-function formatVector(vector) {
-  if (!vector || vector.length === 0) return 'Analyzing...';
-  const start = vector.slice(0, 3).map(n => n.toFixed(3)).join(', ');
-  const end = vector.slice(-3).map(n => n.toFixed(3)).join(', ');
-  return `[${start}, ..., ${end}]`;
-}
-
-async function updateLiveDebug() {
-  const text = quizAnswer.value; // Don't trim yet to allow spaces while typing
-  if (!text.trim()) {
-    liveInputVector.textContent = 'Waiting for input...';
-    liveSimilarity.textContent = '0.0000';
-    return;
-  }
-
-  try {
-    const userEmbedding = await embed(text);
-    const expectedEmbedding = answerEmbeddings[currentQuizIndex];
-
-    // Update Vector Display
-    liveInputVector.textContent = formatVector(userEmbedding);
-
-    // Update Similarity
-    if (expectedEmbedding) {
-      const similarity = cosineSimilarity(userEmbedding, expectedEmbedding);
-      liveSimilarity.textContent = similarity.toFixed(4);
-
-      // Color coding
-      if (similarity >= 0.85) liveSimilarity.style.color = '#00ff88';
-      else if (similarity >= 0.70) liveSimilarity.style.color = '#7fff00';
-      else if (similarity >= 0.55) liveSimilarity.style.color = '#ffa500';
-      else liveSimilarity.style.color = '#ff6b6b';
-    }
-  } catch (e) {
-    console.error('Live update error:', e);
-  }
-}
-
-const debouncedUpdate = debounce(updateLiveDebug, 300);
-
-quizAnswer.addEventListener('input', () => {
-  debouncedUpdate();
-});
-
-// Update displayQuizQuestion to show expected vector immediately
-const originalDisplayQuizQuestion = displayQuizQuestion;
-displayQuizQuestion = function () {
-  originalDisplayQuizQuestion();
-  liveDebugContainer.style.display = 'block';
-
-  // Show expected vector
-  if (answerEmbeddings[currentQuizIndex]) {
-    liveExpectedVector.textContent = formatVector(answerEmbeddings[currentQuizIndex]);
-  }
-
-  // Reset user fields
-  liveInputVector.textContent = 'Waiting for input...';
-  liveSimilarity.textContent = '0.0000';
-  liveSimilarity.style.color = '#ccc';
-};
-
 
 init();

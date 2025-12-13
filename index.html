@@ -61,6 +61,25 @@
         <button id="next-question-btn" class="btn-success" style="display: none;">Next Question</button>
       </div>
       <div class="quiz-feedback" id="quiz-feedback"></div>
+
+      <!-- Live Debug Section -->
+      <div id="live-debug-container" class="live-debug-container" style="display: none;">
+        <h3>⚡ Live Analytics</h3>
+        <div class="live-stats">
+          <div class="stat-box">
+            <label>Current Similarity</label>
+            <div id="live-similarity" class="stat-value">0.0000</div>
+          </div>
+          <div class="stat-box wide">
+            <label>Live Input Vector</label>
+            <div id="live-input-vector" class="vector-mini">Typing...</div>
+          </div>
+          <div class="stat-box wide">
+            <label>Expected Vector</label>
+            <div id="live-expected-vector" class="vector-mini">...</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Educational Info Section -->
