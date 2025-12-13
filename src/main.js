@@ -23,8 +23,8 @@ const quizData = [
   },
   {
     question: "How many continents are there on Earth?",
-    answer: "There are seven continents on Earth.",
-    hint: "There are seven continents on Earth or Earth has seven continents."
+    answer: "There are 7 continents on Earth.",
+    hint: "There are 7 continents on Earth or Earth has seven continents."
   },
 ];
 
